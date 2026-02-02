@@ -1,13 +1,11 @@
 package com.example.airlinebooking.api;
 
 import com.example.airlinebooking.domain.FareClass;
-import com.example.airlinebooking.domain.Flight;
 import com.example.airlinebooking.domain.Passenger;
-import com.example.airlinebooking.domain.Seat;
-import com.example.airlinebooking.domain.SeatStatus;
 import com.example.airlinebooking.service.BookingService;
 import com.example.airlinebooking.service.FareService;
 import com.example.airlinebooking.service.FlightSearchService;
+import com.example.airlinebooking.service.SeatInventoryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,11 +29,14 @@ public class AirlineController {
     private final FlightSearchService flightSearchService;
     private final FareService fareService;
     private final BookingService bookingService;
+    private final SeatInventoryService seatInventoryService;
 
-    public AirlineController(FlightSearchService flightSearchService, FareService fareService, BookingService bookingService) {
+    public AirlineController(FlightSearchService flightSearchService, FareService fareService, BookingService bookingService,
+                             SeatInventoryService seatInventoryService) {
         this.flightSearchService = flightSearchService;
         this.fareService = fareService;
         this.bookingService = bookingService;
+        this.seatInventoryService = seatInventoryService;
     }
 
     @GetMapping("/flights/search")
@@ -47,12 +48,7 @@ public class AirlineController {
 
     @GetMapping("/flights/{flightId}/seats")
     public SeatAvailabilityResponse seatAvailability(@PathVariable String flightId, @RequestParam FareClass fareClass) {
-        Flight flight = flightSearchService.getById(flightId);
-        List<String> seats = flight.getAircraft().seats().stream()
-                .filter(seat -> seat.getFareClass() == fareClass)
-                .filter(seat -> seat.getStatus() == SeatStatus.AVAILABLE)
-                .map(Seat::getId)
-                .toList();
+        List<String> seats = seatInventoryService.availableSeatIds(flightId, fareClass);
         return new SeatAvailabilityResponse(flightId, fareClass.name(), seats);
     }
 

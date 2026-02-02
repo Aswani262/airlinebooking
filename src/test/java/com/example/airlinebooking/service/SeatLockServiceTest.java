@@ -1,50 +1,68 @@
 package com.example.airlinebooking.service;
 
+import com.example.airlinebooking.domain.Aircraft;
+import com.example.airlinebooking.domain.Flight;
 import com.example.airlinebooking.domain.SeatLock;
 import com.example.airlinebooking.domain.SeatStatus;
 import com.example.airlinebooking.repository.FlightRepository;
 import com.example.airlinebooking.repository.SeatLockRepository;
+import com.example.airlinebooking.repository.jdbc.SeatEntity;
+import com.example.airlinebooking.repository.jdbc.SeatJdbcRepository;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SeatLockServiceTest {
     @Test
     void locksAndReleasesSeats() {
-        FlightRepository flightRepository = new FlightRepository();
-        SeatLockRepository seatLockRepository = new SeatLockRepository();
-        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository);
+        FlightRepository flightRepository = mock(FlightRepository.class);
+        SeatLockRepository seatLockRepository = mock(SeatLockRepository.class);
+        SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
+        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
 
-        SeatLock lock = seatLockService.lockSeats("FL-100", List.of("AE2"));
+        Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", LocalDateTime.now(),
+                new Aircraft("AC-1", "A320", Collections.emptyList()));
+        when(flightRepository.findById("FL-100")).thenReturn(Optional.of(flight));
+        SeatEntity seatEntity = new SeatEntity("AE2", "FL-100", "AC-1", "2A",
+                com.example.airlinebooking.domain.FareClass.ECONOMY, SeatStatus.AVAILABLE);
+        when(seatJdbcRepository.findByFlightIdAndSeatIds("FL-100", List.of("AE2"))).thenReturn(List.of(seatEntity));
+        when(seatJdbcRepository.updateStatusIfCurrent("FL-100", List.of("AE2"), SeatStatus.AVAILABLE, SeatStatus.LOCKED))
+                .thenReturn(1);
+        SeatLock lock = new SeatLock("LOCK-1", "FL-100", List.of("AE2"), Instant.now().plusSeconds(600));
+        when(seatLockRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(lock);
 
-        var flight = flightRepository.findById("FL-100").orElseThrow();
-        var seatStatus = flight.getAircraft().seats().stream()
-                .filter(seat -> seat.getId().equals("AE2"))
-                .findFirst()
-                .orElseThrow()
-                .getStatus();
-        assertThat(seatStatus).isEqualTo(SeatStatus.LOCKED);
+        SeatLock created = seatLockService.lockSeats("FL-100", List.of("AE2"));
 
-        seatLockService.releaseLock(lock);
+        verify(seatLockRepository).save(created);
 
-        var releasedStatus = flight.getAircraft().seats().stream()
-                .filter(seat -> seat.getId().equals("AE2"))
-                .findFirst()
-                .orElseThrow()
-                .getStatus();
-        assertThat(releasedStatus).isEqualTo(SeatStatus.AVAILABLE);
+        seatLockService.releaseLock(created);
+
+        verify(seatJdbcRepository).updateStatusIfCurrent("FL-100", List.of("AE2"), SeatStatus.LOCKED, SeatStatus.AVAILABLE);
+        verify(seatLockRepository).delete("LOCK-1");
     }
 
     @Test
     void rejectsUnavailableSeats() {
-        FlightRepository flightRepository = new FlightRepository();
-        SeatLockRepository seatLockRepository = new SeatLockRepository();
-        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository);
+        FlightRepository flightRepository = mock(FlightRepository.class);
+        SeatLockRepository seatLockRepository = mock(SeatLockRepository.class);
+        SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
+        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
 
-        seatLockService.lockSeats("FL-100", List.of("AE3"));
+        Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", LocalDateTime.now(),
+                new Aircraft("AC-1", "A320", Collections.emptyList()));
+        when(flightRepository.findById("FL-100")).thenReturn(Optional.of(flight));
+        SeatEntity seatEntity = new SeatEntity("AE3", "FL-100", "AC-1", "3A",
+                com.example.airlinebooking.domain.FareClass.ECONOMY, SeatStatus.BOOKED);
+        when(seatJdbcRepository.findByFlightIdAndSeatIds("FL-100", List.of("AE3"))).thenReturn(List.of(seatEntity));
 
         assertThatThrownBy(() -> seatLockService.lockSeats("FL-100", List.of("AE3")))
                 .isInstanceOf(IllegalStateException.class)

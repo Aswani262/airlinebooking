@@ -1,12 +1,12 @@
 package com.example.airlinebooking.service;
 
-import com.example.airlinebooking.domain.Flight;
-import com.example.airlinebooking.domain.Seat;
 import com.example.airlinebooking.domain.SeatLock;
 import com.example.airlinebooking.domain.SeatStatus;
 import com.example.airlinebooking.repository.FlightRepository;
 import com.example.airlinebooking.repository.SeatLockRepository;
+import com.example.airlinebooking.repository.jdbc.SeatJdbcRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -22,45 +22,42 @@ public class SeatLockService {
 
     private final FlightRepository flightRepository;
     private final SeatLockRepository seatLockRepository;
+    private final SeatJdbcRepository seatJdbcRepository;
 
-    public SeatLockService(FlightRepository flightRepository, SeatLockRepository seatLockRepository) {
+    public SeatLockService(FlightRepository flightRepository, SeatLockRepository seatLockRepository, SeatJdbcRepository seatJdbcRepository) {
         this.flightRepository = flightRepository;
         this.seatLockRepository = seatLockRepository;
+        this.seatJdbcRepository = seatJdbcRepository;
     }
 
+    @Transactional
     public SeatLock lockSeats(String flightId, List<String> seatIds) {
-        Flight flight = flightRepository.findById(flightId)
+        flightRepository.findById(flightId)
                 .orElseThrow(() -> new IllegalArgumentException("Flight not found"));
-        synchronized (flight) {
-            List<Seat> seatsToLock = flight.getAircraft().seats().stream()
-                    .filter(seat -> seatIds.contains(seat.getId()))
-                    .toList();
-            if (seatsToLock.size() != seatIds.size()) {
-                throw new IllegalArgumentException("Some seats do not exist");
-            }
-            boolean allAvailable = seatsToLock.stream().allMatch(seat -> seat.getStatus() == SeatStatus.AVAILABLE);
-            if (!allAvailable) {
-                throw new IllegalStateException("One or more seats are unavailable");
-            }
-            seatsToLock.forEach(seat -> seat.setStatus(SeatStatus.LOCKED));
-            SeatLock lock = new SeatLock(UUID.randomUUID().toString(), flightId, seatIds, Instant.now().plus(HOLD_DURATION));
-            seatLockRepository.save(lock);
-            return lock;
+        var seatsToLock = seatJdbcRepository.findByFlightIdAndSeatIds(flightId, seatIds);
+        if (seatsToLock.size() != seatIds.size()) {
+            throw new IllegalArgumentException("Some seats do not exist");
         }
+        boolean allAvailable = seatsToLock.stream().allMatch(seat -> seat.getStatus() == SeatStatus.AVAILABLE);
+        if (!allAvailable) {
+            throw new IllegalStateException("One or more seats are unavailable");
+        }
+        int updated = seatJdbcRepository.updateStatusIfCurrent(flightId, seatIds, SeatStatus.AVAILABLE, SeatStatus.LOCKED);
+        if (updated != seatIds.size()) {
+            throw new IllegalStateException("Seat availability changed while locking");
+        }
+        SeatLock lock = new SeatLock(UUID.randomUUID().toString(), flightId, seatIds, Instant.now().plus(HOLD_DURATION));
+        seatLockRepository.save(lock);
+        return lock;
     }
 
+    @Transactional
     public void releaseLock(SeatLock lock) {
-        flightRepository.findById(lock.flightId()).ifPresent(flight -> {
-            synchronized (flight) {
-                flight.getAircraft().seats().stream()
-                        .filter(seat -> lock.seatIds().contains(seat.getId()))
-                        .filter(seat -> seat.getStatus() == SeatStatus.LOCKED)
-                        .forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
-                seatLockRepository.delete(lock.id());
-            }
-        });
+        seatJdbcRepository.updateStatusIfCurrent(lock.flightId(), lock.seatIds(), SeatStatus.LOCKED, SeatStatus.AVAILABLE);
+        seatLockRepository.delete(lock.id());
     }
 
+    @Transactional
     public void finalizeLock(SeatLock lock) {
         seatLockRepository.delete(lock.id());
     }
