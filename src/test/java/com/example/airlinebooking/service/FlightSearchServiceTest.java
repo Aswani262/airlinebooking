@@ -21,7 +21,7 @@ class FlightSearchServiceTest {
         Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", LocalDateTime.now(),
                 new Aircraft("AC-1", "A320", Collections.emptyList()));
         when(flightRepository.findByRoute("JFK", "SFO")).thenReturn(List.of(flight));
-        FlightSearchService service = new FlightSearchService(flightRepository);
+        FlightSearchService service = new DefaultFlightSearchService(flightRepository);
 
         var flights = service.search("JFK", "SFO");
 
@@ -35,7 +35,7 @@ class FlightSearchServiceTest {
         Flight flight = new Flight("FL-200", "XY200", "SFO", "SEA", LocalDateTime.now(),
                 new Aircraft("AC-2", "B737", Collections.emptyList()));
         when(flightRepository.findById("FL-200")).thenReturn(Optional.of(flight));
-        FlightSearchService service = new FlightSearchService(flightRepository);
+        FlightSearchService service = new DefaultFlightSearchService(flightRepository);
 
         var flight = service.getById("FL-200");
 

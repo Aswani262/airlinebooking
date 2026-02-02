@@ -27,7 +27,7 @@ class SeatLockServiceTest {
         FlightRepository flightRepository = mock(FlightRepository.class);
         SeatLockRepository seatLockRepository = mock(SeatLockRepository.class);
         SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
-        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
+        SeatLockService seatLockService = new DefaultSeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
 
         Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", LocalDateTime.now(),
                 new Aircraft("AC-1", "A320", Collections.emptyList()));
@@ -55,7 +55,7 @@ class SeatLockServiceTest {
         FlightRepository flightRepository = mock(FlightRepository.class);
         SeatLockRepository seatLockRepository = mock(SeatLockRepository.class);
         SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
-        SeatLockService seatLockService = new SeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
+        SeatLockService seatLockService = new DefaultSeatLockService(flightRepository, seatLockRepository, seatJdbcRepository);
 
         Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", LocalDateTime.now(),
                 new Aircraft("AC-1", "A320", Collections.emptyList()));

@@ -29,7 +29,7 @@ class BookingServiceTest {
         BookingRepository bookingRepository = mock(BookingRepository.class);
         SeatLockService seatLockService = mock(SeatLockService.class);
         SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
-        BookingService bookingService = new BookingService(bookingRepository, flightRepository, seatLockService, seatJdbcRepository);
+        BookingService bookingService = new DefaultBookingService(bookingRepository, flightRepository, seatLockService, seatJdbcRepository);
 
         Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", java.time.LocalDateTime.now(),
                 new Aircraft("AC-1", "A320", Collections.emptyList()));

@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FareServiceTest {
     @Test
     void returnsFareRulesAndBaggagePolicy() {
-        FareService fareService = new FareService();
+        FareService fareService = new DefaultFareService();
 
         String rules = fareService.fareRules(FareClass.BUSINESS);
         String baggage = fareService.baggagePolicy(FareClass.BUSINESS);
