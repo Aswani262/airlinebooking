@@ -63,3 +63,25 @@ CREATE TABLE seat_lock_seats (
 );
 
 CREATE INDEX seat_lock_seats_lock_idx ON seat_lock_seats (lock_id);
+
+CREATE TABLE payment_transactions (
+    id VARCHAR(40) PRIMARY KEY,
+    booking_id VARCHAR(40) NOT NULL,
+    flight_id VARCHAR(40) NOT NULL REFERENCES flights(id),
+    amount_cents INTEGER NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX payment_transactions_booking_idx ON payment_transactions (booking_id);
+CREATE INDEX payment_transactions_status_idx ON payment_transactions (status);
+CREATE INDEX payment_transactions_expires_idx ON payment_transactions (expires_at);
+
+CREATE TABLE payment_transaction_seats (
+    id BIGSERIAL PRIMARY KEY,
+    transaction_id VARCHAR(40) NOT NULL REFERENCES payment_transactions(id) ON DELETE CASCADE,
+    seat_id VARCHAR(40) NOT NULL REFERENCES seats(id)
+);
+
+CREATE INDEX payment_transaction_seats_tx_idx ON payment_transaction_seats (transaction_id);

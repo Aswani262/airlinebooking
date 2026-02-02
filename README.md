@@ -55,7 +55,8 @@ graph LR
     "flightId": "FL-100",
     "passengerName": "Taylor Swift",
     "passengerEmail": "taylor@example.com",
-    "seatIds": ["AE1", "AE2"]
+    "seatIds": ["AE1", "AE2"],
+    "amountCents": 35000
   }
   ```
 - `POST /api/bookings/{bookingId}/cancel`
@@ -66,6 +67,9 @@ graph LR
     "seatIds": ["BE1", "BE2"]
   }
   ```
+- `POST /api/payments/{transactionId}/success`
+- `POST /api/payments/{transactionId}/failure`
+- `POST /api/payments/expire`
 
 ## Key Architecture Decisions
 

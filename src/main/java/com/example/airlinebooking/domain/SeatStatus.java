@@ -6,5 +6,6 @@ package com.example.airlinebooking.domain;
 public enum SeatStatus {
     AVAILABLE,
     LOCKED,
+    PAYMENT_PENDING,
     BOOKED
 }

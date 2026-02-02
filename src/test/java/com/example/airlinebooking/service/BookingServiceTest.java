@@ -6,9 +6,10 @@ import com.example.airlinebooking.domain.Passenger;
 import com.example.airlinebooking.domain.SeatLock;
 import com.example.airlinebooking.domain.SeatStatus;
 import com.example.airlinebooking.domain.Aircraft;
+import com.example.airlinebooking.domain.PaymentStatus;
+import com.example.airlinebooking.domain.PaymentTransaction;
 import com.example.airlinebooking.integration.AirlineItService;
 import com.example.airlinebooking.integration.PaymentService;
-import com.example.airlinebooking.integration.PaymentTransaction;
 import com.example.airlinebooking.repository.BookingRepository;
 import com.example.airlinebooking.repository.FlightRepository;
 import com.example.airlinebooking.repository.jdbc.SeatJdbcRepository;
@@ -57,8 +58,9 @@ class BookingServiceTest {
 
         when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
         when(seatJdbcRepository.updateStatus(booking.getFlightId(), booking.getSeatIds(), SeatStatus.AVAILABLE)).thenReturn(1);
-        when(paymentService.refund(booking.getId(), 0, "Customer cancellation"))
-                .thenReturn(new PaymentTransaction("REF-1", "REFUNDED", 0, "Customer cancellation"));
+        when(paymentService.refund(booking.getId(), booking.getFlightId(), 0, "Customer cancellation"))
+                .thenReturn(new PaymentTransaction("REF-1", booking.getId(), booking.getFlightId(), List.of(),
+                        0, PaymentStatus.SUCCEEDED, Instant.now(), Instant.now().plusSeconds(600)));
 
         var cancelled = bookingService.cancel(booking.getId());
         assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.REFUNDED);

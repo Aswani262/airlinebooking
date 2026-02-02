@@ -2,6 +2,7 @@ package com.example.airlinebooking.api;
 
 import com.example.airlinebooking.domain.FareClass;
 import com.example.airlinebooking.domain.Passenger;
+import com.example.airlinebooking.service.BookingProcessManager;
 import com.example.airlinebooking.service.BookingService;
 import com.example.airlinebooking.service.FareService;
 import com.example.airlinebooking.service.FlightSearchService;
@@ -30,13 +31,15 @@ public class AirlineController {
     private final FareService fareService;
     private final BookingService bookingService;
     private final SeatInventoryService seatInventoryService;
+    private final BookingProcessManager bookingProcessManager;
 
     public AirlineController(FlightSearchService flightSearchService, FareService fareService, BookingService bookingService,
-                             SeatInventoryService seatInventoryService) {
+                             SeatInventoryService seatInventoryService, BookingProcessManager bookingProcessManager) {
         this.flightSearchService = flightSearchService;
         this.fareService = fareService;
         this.bookingService = bookingService;
         this.seatInventoryService = seatInventoryService;
+        this.bookingProcessManager = bookingProcessManager;
     }
 
     @GetMapping("/flights/search")
@@ -63,17 +66,16 @@ public class AirlineController {
     }
 
     @PostMapping("/bookings")
-    @ResponseStatus(HttpStatus.CREATED)
-    public BookingResponse createBooking(@Valid @RequestBody BookingRequest request) {
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PaymentInitiatedResponse createBooking(@Valid @RequestBody BookingRequest request) {
         Passenger passenger = new Passenger(UUID.randomUUID().toString(), request.getPassengerName(), request.getPassengerEmail());
-        var booking = bookingService.book(request.getFlightId(), passenger, request.getSeatIds());
-        return new BookingResponse(
-                booking.getId(),
-                booking.getFlightId(),
-                booking.getPassenger().fullName(),
-                booking.getStatus().name(),
-                booking.getSeatIds(),
-                booking.getCreatedAt()
+        var transaction = bookingProcessManager.startBooking(request.getFlightId(), passenger, request.getSeatIds(),
+                request.getAmountCents());
+        return new PaymentInitiatedResponse(
+                transaction.getBookingId(),
+                transaction.getId(),
+                transaction.getStatus().name(),
+                transaction.getExpiresAt()
         );
     }
 
@@ -94,6 +96,24 @@ public class AirlineController {
                 newBooking.getFlightId(),
                 newBooking.getSeatIds()
         );
+    }
+
+    @PostMapping("/payments/{transactionId}/success")
+    public PaymentResultResponse paymentSuccess(@PathVariable String transactionId) {
+        var booking = bookingProcessManager.handlePaymentSuccess(transactionId);
+        return new PaymentResultResponse(transactionId, booking.getId(), booking.getStatus().name());
+    }
+
+    @PostMapping("/payments/{transactionId}/failure")
+    public PaymentResultResponse paymentFailure(@PathVariable String transactionId) {
+        bookingProcessManager.handlePaymentFailure(transactionId);
+        return new PaymentResultResponse(transactionId, null, "FAILED");
+    }
+
+    @PostMapping("/payments/expire")
+    public PaymentExpiryResponse expirePayments() {
+        int released = bookingProcessManager.releaseExpiredPayments();
+        return new PaymentExpiryResponse(released);
     }
 
     private FlightSummary toSummary(Flight flight) {

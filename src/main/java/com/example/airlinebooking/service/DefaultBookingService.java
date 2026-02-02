@@ -69,7 +69,7 @@ public class DefaultBookingService implements BookingService {
         seatJdbcRepository.updateStatus(booking.getFlightId(), booking.getSeatIds(), SeatStatus.AVAILABLE);
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
-        paymentService.refund(booking.getId(), 0, "Customer cancellation");
+        paymentService.refund(booking.getId(), booking.getFlightId(), 0, "Customer cancellation");
         booking.setStatus(BookingStatus.REFUNDED);
         bookingRepository.save(booking);
         airlineItService.notifyCancellation(booking);
@@ -90,7 +90,7 @@ public class DefaultBookingService implements BookingService {
         existingBooking.setStatus(BookingStatus.RESCHEDULED);
         bookingRepository.save(existingBooking);
 
-        paymentService.collectChangeFee(existingBooking.getId(), 0, "Schedule change");
+        paymentService.collectChangeFee(existingBooking.getId(), existingBooking.getFlightId(), 0, "Schedule change");
         Booking newBooking = book(newFlightId, existingBooking.getPassenger(), newSeatIds);
         airlineItService.notifyReschedule(existingBooking, newBooking);
         return newBooking;

@@ -3,6 +3,7 @@ package com.example.airlinebooking.api;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 
@@ -18,6 +19,8 @@ public class BookingRequest {
     private String passengerEmail;
     @NotEmpty
     private List<String> seatIds;
+    @Positive
+    private int amountCents;
 
     public String getFlightId() {
         return flightId;
@@ -49,5 +52,13 @@ public class BookingRequest {
 
     public void setSeatIds(List<String> seatIds) {
         this.seatIds = seatIds;
+    }
+
+    public int getAmountCents() {
+        return amountCents;
+    }
+
+    public void setAmountCents(int amountCents) {
+        this.amountCents = amountCents;
     }
 }
