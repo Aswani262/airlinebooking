@@ -5,6 +5,7 @@ import com.example.airlinebooking.repository.jdbc.SeatLockEntity;
 import com.example.airlinebooking.repository.jdbc.SeatLockJdbcRepository;
 import com.example.airlinebooking.repository.jdbc.SeatLockSeatEntity;
 import com.example.airlinebooking.repository.jdbc.SeatLockSeatJdbcRepository;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,17 +18,18 @@ import java.util.stream.Collectors;
 @Repository
 public class JdbcSeatLockRepository implements SeatLockRepository {
     private final SeatLockJdbcRepository seatLockJdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
     private final SeatLockSeatJdbcRepository seatLockSeatJdbcRepository;
 
-    public JdbcSeatLockRepository(SeatLockJdbcRepository seatLockJdbcRepository, SeatLockSeatJdbcRepository seatLockSeatJdbcRepository) {
+    public JdbcSeatLockRepository(SeatLockJdbcRepository seatLockJdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate, SeatLockSeatJdbcRepository seatLockSeatJdbcRepository) {
         this.seatLockJdbcRepository = seatLockJdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
         this.seatLockSeatJdbcRepository = seatLockSeatJdbcRepository;
     }
 
     @Override
-    public SeatLock save(SeatLock lock) {
-        seatLockJdbcRepository.save(new SeatLockEntity(lock.id(), lock.flightId(), lock.expiresAt()));
-        seatLockSeatJdbcRepository.deleteByLockId(lock.id());
+    public SeatLock insert(SeatLock lock) {
+        jdbcAggregateTemplate.insert(new SeatLockEntity(lock.id(), lock.flightId(), lock.expiresAt()));
         for (String seatId : lock.seatIds()) {
             seatLockSeatJdbcRepository.save(new SeatLockSeatEntity(null, lock.id(), seatId));
         }
@@ -51,5 +53,10 @@ public class JdbcSeatLockRepository implements SeatLockRepository {
     public void delete(String id) {
         seatLockSeatJdbcRepository.deleteByLockId(id);
         seatLockJdbcRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByFlightId(String flightId) {
+        seatLockJdbcRepository.deleteByFlightId(flightId);
     }
 }

@@ -7,4 +7,6 @@ import com.example.airlinebooking.domain.PaymentTransaction;
  */
 public interface PaymentIntegrationService {
     void requestPayment(PaymentTransaction transaction);
+
+    void processRefund(String bookingId, double amount, String customerCancellation,String transactionId);
 }

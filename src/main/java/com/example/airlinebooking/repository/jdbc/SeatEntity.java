@@ -2,6 +2,7 @@ package com.example.airlinebooking.repository.jdbc;
 
 import com.example.airlinebooking.domain.FareClass;
 import com.example.airlinebooking.domain.SeatStatus;
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -9,6 +10,7 @@ import org.springframework.data.relational.core.mapping.Table;
  * Represents per-flight seat inventory so locks and bookings mutate rows atomically in Postgres.
  */
 @Table("seats")
+@Data
 public class SeatEntity {
     @Id
     private String id;
@@ -30,27 +32,4 @@ public class SeatEntity {
         this.status = status;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getFlightId() {
-        return flightId;
-    }
-
-    public String getAircraftId() {
-        return aircraftId;
-    }
-
-    public String getSeatNumber() {
-        return seatNumber;
-    }
-
-    public FareClass getFareClass() {
-        return fareClass;
-    }
-
-    public SeatStatus getStatus() {
-        return status;
-    }
 }

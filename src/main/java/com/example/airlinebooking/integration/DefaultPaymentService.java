@@ -26,36 +26,43 @@ public class DefaultPaymentService implements PaymentService {
     }
 
     @Override
-    public PaymentTransaction createTransaction(String bookingId, String flightId, java.util.List<String> seatIds, int amountCents,
+    public PaymentTransaction createTransaction(String bookingId, double amountCents,
                                                 String reason) {
         PaymentTransaction transaction = new PaymentTransaction(
                 UUID.randomUUID().toString(),
                 bookingId,
-                flightId,
-                seatIds,
                 amountCents,
                 PaymentStatus.PENDING,
                 Instant.now(),
-                Instant.now().plus(PAYMENT_EXPIRY)
+                Instant.now().plus(PAYMENT_EXPIRY),null,null
         );
-        paymentTransactionRepository.save(transaction);
+        paymentTransactionRepository.insert(transaction);
         paymentIntegrationService.requestPayment(transaction);
         return transaction;
     }
 
     @Override
-    public PaymentTransaction refund(String bookingId, String flightId, int amountCents, String reason) {
-        PaymentTransaction transaction = new PaymentTransaction(UUID.randomUUID().toString(), bookingId, flightId, java.util.List.of(),
-                amountCents, PaymentStatus.SUCCEEDED, Instant.now(), Instant.now().plus(PAYMENT_EXPIRY));
-        paymentTransactionRepository.save(transaction);
+    public PaymentTransaction collectChangeFee(String bookingId, double amount, String reason) {
+        PaymentTransaction transaction = new PaymentTransaction(UUID.randomUUID().toString(), bookingId,
+                amount, PaymentStatus.SUCCEEDED, Instant.now(), Instant.now().plus(PAYMENT_EXPIRY),null,null);
+        paymentTransactionRepository.update(transaction);
         return transaction;
     }
 
     @Override
-    public PaymentTransaction collectChangeFee(String bookingId, String flightId, int amountCents, String reason) {
-        PaymentTransaction transaction = new PaymentTransaction(UUID.randomUUID().toString(), bookingId, flightId, java.util.List.of(),
-                amountCents, PaymentStatus.SUCCEEDED, Instant.now(), Instant.now().plus(PAYMENT_EXPIRY));
-        paymentTransactionRepository.save(transaction);
-        return transaction;
+    public void initateRefund(String bookingId, double amount, String customerCancellation) {
+        String transactionId =   UUID.randomUUID().toString();
+        //Call the payment integration service to process the refund
+        //This will interact with the payment gateway to initiate the refund
+        // Will get payment gateway transaction id and response in real implementation
+        paymentIntegrationService.processRefund(bookingId, amount, customerCancellation,transactionId);
+
+        //Set the payment transaction status to REFUND_IN_PROGRESS
+        //
+
+        PaymentTransaction transaction = new PaymentTransaction(UUID.randomUUID().toString(), bookingId,
+                amount, PaymentStatus.REFUND_IN_PROGRESS, Instant.now(), Instant.now(),null,null);
+        paymentTransactionRepository.update(transaction);
+
     }
 }

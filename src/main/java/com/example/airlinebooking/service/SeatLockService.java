@@ -9,7 +9,6 @@ import com.example.airlinebooking.domain.SeatLock;
 public interface SeatLockService {
     SeatLock lockSeats(String flightId, List<String> seatIds);
 
-    void releaseLock(SeatLock lock);
+    void releaseLock(String fightId);
 
-    void finalizeLock(SeatLock lock);
 }

@@ -1,6 +1,8 @@
 package com.example.airlinebooking.repository.jdbc;
 
 import com.example.airlinebooking.domain.PaymentStatus;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -10,55 +12,32 @@ import java.time.Instant;
  * Stores payment transactions for booking flow coordination.
  */
 @Table("payment_transactions")
+@Data
 public class PaymentTransactionEntity {
     @Id
     private String id;
     private String bookingId;
-    private String flightId;
-    private int amountCents;
+    private double amount;
     private PaymentStatus status;
     private Instant createdAt;
-    private Instant expiresAt;
+    private Instant updatesAt;
+    private String paymentProviderTransactionId;
+    private String paymentProviderResponse;
+
 
     public PaymentTransactionEntity() {
     }
 
-    public PaymentTransactionEntity(String id, String bookingId, String flightId, int amountCents, PaymentStatus status,
-                                    Instant createdAt, Instant expiresAt) {
+    public PaymentTransactionEntity(String id, String bookingId, double amount, PaymentStatus status,
+                                    Instant createdAt, Instant updatesAt, String paymentProviderTransactionId,
+                                    String paymentProviderResponse) {
         this.id = id;
         this.bookingId = bookingId;
-        this.flightId = flightId;
-        this.amountCents = amountCents;
+        this.amount = amount;
         this.status = status;
         this.createdAt = createdAt;
-        this.expiresAt = expiresAt;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getBookingId() {
-        return bookingId;
-    }
-
-    public String getFlightId() {
-        return flightId;
-    }
-
-    public int getAmountCents() {
-        return amountCents;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
+        this.updatesAt = updatesAt;
+        this.paymentProviderTransactionId = paymentProviderTransactionId;
+        this.paymentProviderResponse = paymentProviderResponse;
     }
 }

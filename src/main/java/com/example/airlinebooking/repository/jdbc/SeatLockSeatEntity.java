@@ -1,11 +1,13 @@
 package com.example.airlinebooking.repository.jdbc;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * Join table listing the seats held by a lock, enabling efficient release.
  */
+@Data
 @Table("seat_lock_seats")
 public class SeatLockSeatEntity {
     @Id
@@ -22,15 +24,4 @@ public class SeatLockSeatEntity {
         this.seatId = seatId;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getLockId() {
-        return lockId;
-    }
-
-    public String getSeatId() {
-        return seatId;
-    }
 }

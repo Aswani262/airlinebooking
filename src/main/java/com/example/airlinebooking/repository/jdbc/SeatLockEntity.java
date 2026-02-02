@@ -1,6 +1,8 @@
 package com.example.airlinebooking.repository.jdbc;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceCreator;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
@@ -8,6 +10,7 @@ import java.time.Instant;
 /**
  * Stores seat lock headers to coordinate temporary holds across multiple seats.
  */
+@Data
 @Table("seat_locks")
 public class SeatLockEntity {
     @Id
@@ -24,15 +27,4 @@ public class SeatLockEntity {
         this.expiresAt = expiresAt;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getFlightId() {
-        return flightId;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
 }

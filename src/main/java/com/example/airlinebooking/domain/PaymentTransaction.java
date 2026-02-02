@@ -1,66 +1,34 @@
 package com.example.airlinebooking.domain;
 
+import lombok.Data;
+
 import java.time.Instant;
 import java.util.List;
 
 /**
  * Payment transaction aggregate used by the booking process manager to track payment progress.
  */
+@Data
 public class PaymentTransaction {
     private final String id;
     private final String bookingId;
-    private final String flightId;
-    private final List<String> seatIds;
-    private final int amountCents;
+    private final double amount;
     private PaymentStatus status;
     private final Instant createdAt;
-    private final Instant expiresAt;
-
-    public PaymentTransaction(String id, String bookingId, String flightId, List<String> seatIds, int amountCents, PaymentStatus status,
-                              Instant createdAt, Instant expiresAt) {
+    private Instant updatesAt;
+    private String paymentProviderTransactionId;
+    private String paymentProviderResponse;
+    public PaymentTransaction(String id, String bookingId, double amount, PaymentStatus status,
+                              Instant createdAt, Instant updatesAt, String paymentProviderTransactionId,
+                              String paymentProviderResponse) {
         this.id = id;
         this.bookingId = bookingId;
-        this.flightId = flightId;
-        this.seatIds = seatIds;
-        this.amountCents = amountCents;
+        this.amount = amount;
         this.status = status;
         this.createdAt = createdAt;
-        this.expiresAt = expiresAt;
+        this.updatesAt = updatesAt;
+        this.paymentProviderTransactionId = paymentProviderTransactionId;
+        this.paymentProviderResponse = paymentProviderResponse;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getBookingId() {
-        return bookingId;
-    }
-
-    public String getFlightId() {
-        return flightId;
-    }
-
-    public List<String> getSeatIds() {
-        return seatIds;
-    }
-
-    public int getAmountCents() {
-        return amountCents;
-    }
-
-    public PaymentStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PaymentStatus status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
 }

@@ -6,9 +6,11 @@ import com.example.airlinebooking.repository.jdbc.BookingEntity;
 import com.example.airlinebooking.repository.jdbc.BookingJdbcRepository;
 import com.example.airlinebooking.repository.jdbc.BookingSeatEntity;
 import com.example.airlinebooking.repository.jdbc.BookingSeatJdbcRepository;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -19,27 +21,26 @@ import java.util.stream.Collectors;
 public class JdbcBookingRepository implements BookingRepository {
     private final BookingJdbcRepository bookingJdbcRepository;
     private final BookingSeatJdbcRepository bookingSeatJdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
 
-    public JdbcBookingRepository(BookingJdbcRepository bookingJdbcRepository, BookingSeatJdbcRepository bookingSeatJdbcRepository) {
+    public JdbcBookingRepository(BookingJdbcRepository bookingJdbcRepository, BookingSeatJdbcRepository bookingSeatJdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.bookingJdbcRepository = bookingJdbcRepository;
         this.bookingSeatJdbcRepository = bookingSeatJdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
-    public Booking save(Booking booking) {
+    public Booking update(Booking booking, Map<String,String> passengerSeatMap) {
         BookingEntity entity = new BookingEntity(
                 booking.getId(),
                 booking.getFlightId(),
-                booking.getPassenger().id(),
-                booking.getPassenger().fullName(),
-                booking.getPassenger().email(),
                 booking.getStatus(),
+                booking.getAmount(),
                 booking.getCreatedAt()
         );
         bookingJdbcRepository.save(entity);
-        bookingSeatJdbcRepository.deleteByBookingId(booking.getId());
-        for (String seatId : booking.getSeatIds()) {
-            bookingSeatJdbcRepository.save(new BookingSeatEntity(null, booking.getId(), seatId));
+        for (Map.Entry<String, String>  seatIdPassenger : passengerSeatMap.entrySet()) {
+            bookingSeatJdbcRepository.save(new BookingSeatEntity(null, booking.getId(), seatIdPassenger.getKey(),seatIdPassenger.getValue()));
         }
         return booking;
     }
@@ -54,15 +55,28 @@ public class JdbcBookingRepository implements BookingRepository {
                 .map(BookingSeatEntity::getSeatId)
                 .collect(Collectors.toList());
         BookingEntity bookingEntity = entity.get();
-        Passenger passenger = new Passenger(bookingEntity.getPassengerId(), bookingEntity.getPassengerName(),
-                bookingEntity.getPassengerEmail());
+
         return Optional.of(new Booking(
                 bookingEntity.getId(),
                 bookingEntity.getFlightId(),
-                passenger,
                 seatIds,
                 bookingEntity.getStatus(),
+                bookingEntity.getAmount(),
                 bookingEntity.getCreatedAt()
         ));
+    }
+
+    @Override
+    public void insert(Booking booking, Map<String, String> passagnerSeatMap) {
+        jdbcAggregateTemplate.insert(new BookingEntity(
+                booking.getId(),
+                booking.getFlightId(),
+                booking.getStatus(),
+                booking.getAmount(),
+                booking.getCreatedAt()
+        ));
+        for (Map.Entry<String, String>  seatIdPassenger : passagnerSeatMap.entrySet()) {
+            bookingSeatJdbcRepository.save(new BookingSeatEntity(null, booking.getId(), seatIdPassenger.getKey(),seatIdPassenger.getValue()));
+        }
     }
 }

@@ -2,7 +2,6 @@ package com.example.airlinebooking.service;
 
 import com.example.airlinebooking.domain.Booking;
 import com.example.airlinebooking.domain.BookingStatus;
-import com.example.airlinebooking.domain.Passenger;
 import com.example.airlinebooking.domain.PaymentStatus;
 import com.example.airlinebooking.domain.PaymentTransaction;
 import com.example.airlinebooking.domain.SeatLock;
@@ -17,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -48,17 +49,25 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
 
     @Override
     @Transactional
-    public PaymentTransaction startBooking(String flightId, Passenger passenger, List<String> seatIds, int amountCents) {
+    public PaymentTransaction startBooking(String flightId, double amount ,Map<String,String> passagnerSeatMap) {
         flightRepository.findById(flightId)
                 .orElseThrow(() -> new IllegalArgumentException("Flight not found"));
+
+
+        List<String> seatIds = passagnerSeatMap.keySet().stream().toList();
+        // Check seat availability and lock seats
         SeatLock lock = seatLockService.lockSeats(flightId, seatIds);
+
         String bookingId = UUID.randomUUID().toString();
-        Booking booking = new Booking(bookingId, flightId, passenger, seatIds, BookingStatus.PENDING_PAYMENT, Instant.now());
-        bookingRepository.save(booking);
-        PaymentTransaction transaction = paymentService.createTransaction(bookingId, flightId, seatIds, amountCents, "Initial charge");
-        seatJdbcRepository.updateStatusIfCurrent(flightId, seatIds, SeatStatus.LOCKED, SeatStatus.PAYMENT_PENDING);
-        seatLockService.finalizeLock(lock);
-        return transaction;
+
+        // Create booking record with PENDING_PAYMENT status
+        Booking booking = new Booking(bookingId, flightId, seatIds, BookingStatus.PENDING, amount,Instant.now());
+
+        bookingRepository.insert(booking,passagnerSeatMap);
+
+        // Create payment transaction with PENDING status which hold information about booking and locked seats with
+        // 3rd party payment gateway
+        return paymentService.createTransaction(bookingId, amount, "Seat looked");
     }
 
     @Override
@@ -69,18 +78,29 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
         if (transaction.getStatus() != PaymentStatus.PENDING) {
             throw new IllegalStateException("Payment is not pending");
         }
-        int updated = seatJdbcRepository.updateStatusIfCurrent(transaction.getFlightId(), transaction.getSeatIds(),
-                SeatStatus.PAYMENT_PENDING, SeatStatus.BOOKED);
-        if (updated != transaction.getSeatIds().size()) {
-            throw new IllegalStateException("Seat state mismatch while confirming payment");
-        }
+
         Booking booking = bookingRepository.findById(transaction.getBookingId())
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
-        booking.setStatus(BookingStatus.CONFIRMED);
-        bookingRepository.save(booking);
-        transaction.setStatus(PaymentStatus.SUCCEEDED);
-        paymentTransactionRepository.save(transaction);
+
+
+        if((booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.FAILED) && transaction.getStatus() == PaymentStatus.REFUND_IN_PROGRESS){
+
+            transaction.setStatus(PaymentStatus.REFUNDED);
+            paymentTransactionRepository.update(transaction);
+
+        } else {
+
+            transaction.setStatus(PaymentStatus.SUCCEEDED);
+            booking.setStatus(BookingStatus.CONFIRMED);
+            bookingRepository.update(booking, Collections.emptyMap());
+        }
+
+        paymentTransactionRepository.update(transaction);
+
+        seatLockService.releaseLock(booking.getFlightId());
+
         airlineItService.issueTicket(booking);
+
         return booking;
     }
 
@@ -89,30 +109,35 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
     public void handlePaymentFailure(String transactionId) {
         PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment transaction not found"));
-        seatJdbcRepository.updateStatusIfCurrent(transaction.getFlightId(), transaction.getSeatIds(),
-                SeatStatus.PAYMENT_PENDING, SeatStatus.AVAILABLE);
-        bookingRepository.findById(transaction.getBookingId()).ifPresent(booking -> {
-            booking.setStatus(BookingStatus.CANCELLED);
-            bookingRepository.save(booking);
-        });
-        transaction.setStatus(PaymentStatus.FAILED);
-        paymentTransactionRepository.save(transaction);
+
+        Booking booking = bookingRepository.findById(transaction.getBookingId()).get();
+
+        seatJdbcRepository.updateStatusIfCurrent(booking.getFlightId(), booking.getSeatIds(),
+                SeatStatus.LOCKED, SeatStatus.AVAILABLE);
+
+        seatLockService.releaseLock(booking.getFlightId());
+
+        if(booking.getStatus() == BookingStatus.CANCELLED && transaction.getStatus() == PaymentStatus.REFUND_IN_PROGRESS){
+
+            transaction.setStatus(PaymentStatus.REFUND_FAILED);
+            paymentTransactionRepository.update(transaction);
+
+        } else {
+
+            transaction.setStatus(PaymentStatus.FAILED);
+            booking.setStatus(BookingStatus.FAILED);
+            bookingRepository.update(booking,Collections.emptyMap());
+        }
+        paymentTransactionRepository.update(transaction);
     }
 
+
     @Override
-    @Transactional
-    public int releaseExpiredPayments() {
-        List<PaymentTransaction> expired = paymentTransactionRepository.findExpiredPending(Instant.now());
-        for (PaymentTransaction transaction : expired) {
-            seatJdbcRepository.updateStatusIfCurrent(transaction.getFlightId(), transaction.getSeatIds(),
-                    SeatStatus.PAYMENT_PENDING, SeatStatus.AVAILABLE);
-            bookingRepository.findById(transaction.getBookingId()).ifPresent(booking -> {
-                booking.setStatus(BookingStatus.CANCELLED);
-                bookingRepository.save(booking);
-            });
-            transaction.setStatus(PaymentStatus.EXPIRED);
-            paymentTransactionRepository.save(transaction);
+    public void handlePayment(String bookingId, String paymentGatewayTransactionId, String transactionId, String rawPayload, String status) {
+        if(status.equals("SUCCESS")){
+            handlePaymentSuccess(transactionId);
+        } else if(status.equals("FAILED")){
+            handlePaymentFailure(transactionId);
         }
-        return expired.size();
     }
 }

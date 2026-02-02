@@ -12,4 +12,9 @@ public class DefaultPaymentIntegrationService implements PaymentIntegrationServi
     public void requestPayment(PaymentTransaction transaction) {
         // Placeholder for third-party payment API call.
     }
+
+    @Override
+    public void processRefund(String bookingId, double amount, String customerCancellation,String transactionId) {
+        // Placeholder for third-party refund API call.
+    }
 }

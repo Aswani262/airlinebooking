@@ -34,8 +34,7 @@ public class DefaultSeatLockService implements SeatLockService {
     @Override
     @Transactional
     public SeatLock lockSeats(String flightId, List<String> seatIds) {
-        flightRepository.findById(flightId)
-                .orElseThrow(() -> new IllegalArgumentException("Flight not found"));
+
         var seatsToLock = seatJdbcRepository.findByFlightIdAndSeatIds(flightId, seatIds);
         if (seatsToLock.size() != seatIds.size()) {
             throw new IllegalArgumentException("Some seats do not exist");
@@ -48,21 +47,21 @@ public class DefaultSeatLockService implements SeatLockService {
         if (updated != seatIds.size()) {
             throw new IllegalStateException("Seat availability changed while locking");
         }
+        //Add unique constraint on (flight_id, seat_id) in seat_locks table to prevent double locking
         SeatLock lock = new SeatLock(UUID.randomUUID().toString(), flightId, seatIds, Instant.now().plus(HOLD_DURATION));
-        seatLockRepository.save(lock);
+        seatLockRepository.insert(lock);
         return lock;
     }
 
     @Override
     @Transactional
-    public void releaseLock(SeatLock lock) {
-        seatJdbcRepository.updateStatusIfCurrent(lock.flightId(), lock.seatIds(), SeatStatus.LOCKED, SeatStatus.AVAILABLE);
-        seatLockRepository.delete(lock.id());
+    public void releaseLock(String fightId) {
+        // For simplicity, we delete the lock record here
+        // we also have a scheduled job to clean up expired locks
+        //Why this table because query on flight_id and seat_ids is complex on seat table for expired locks is going to complex
+        // this also applied to booking table for cleaning up expired bookings
+        seatLockRepository.deleteByFlightId(fightId);
     }
 
-    @Override
-    @Transactional
-    public void finalizeLock(SeatLock lock) {
-        seatLockRepository.delete(lock.id());
-    }
+
 }

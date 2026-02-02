@@ -1,17 +1,12 @@
 package com.example.airlinebooking.repository;
 
-import com.example.airlinebooking.domain.PaymentStatus;
 import com.example.airlinebooking.domain.PaymentTransaction;
 import com.example.airlinebooking.repository.jdbc.PaymentTransactionEntity;
 import com.example.airlinebooking.repository.jdbc.PaymentTransactionJdbcRepository;
-import com.example.airlinebooking.repository.jdbc.PaymentTransactionSeatEntity;
-import com.example.airlinebooking.repository.jdbc.PaymentTransactionSeatJdbcRepository;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * JDBC-backed payment transaction repository for persistent payment tracking.
@@ -19,30 +14,47 @@ import java.util.stream.Collectors;
 @Repository
 public class JdbcPaymentTransactionRepository implements PaymentTransactionRepository {
     private final PaymentTransactionJdbcRepository transactionJdbcRepository;
-    private final PaymentTransactionSeatJdbcRepository transactionSeatJdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
 
-    public JdbcPaymentTransactionRepository(PaymentTransactionJdbcRepository transactionJdbcRepository,
-                                            PaymentTransactionSeatJdbcRepository transactionSeatJdbcRepository) {
+    public JdbcPaymentTransactionRepository(PaymentTransactionJdbcRepository transactionJdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate
+    ) {
         this.transactionJdbcRepository = transactionJdbcRepository;
-        this.transactionSeatJdbcRepository = transactionSeatJdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
-    public PaymentTransaction save(PaymentTransaction transaction) {
+    public PaymentTransaction update(PaymentTransaction transaction) {
         PaymentTransactionEntity entity = new PaymentTransactionEntity(
                 transaction.getId(),
                 transaction.getBookingId(),
-                transaction.getFlightId(),
-                transaction.getAmountCents(),
+                transaction.getAmount(),
                 transaction.getStatus(),
                 transaction.getCreatedAt(),
-                transaction.getExpiresAt()
+                transaction.getUpdatesAt(),
+                transaction.getPaymentProviderTransactionId(),
+                transaction.getPaymentProviderResponse()
+
+
         );
         transactionJdbcRepository.save(entity);
-        transactionSeatJdbcRepository.deleteByTransactionId(transaction.getId());
-        for (String seatId : transaction.getSeatIds()) {
-            transactionSeatJdbcRepository.save(new PaymentTransactionSeatEntity(null, transaction.getId(), seatId));
-        }
+        return transaction;
+    }
+
+    @Override
+    public PaymentTransaction insert(PaymentTransaction transaction) {
+        PaymentTransactionEntity entity = new PaymentTransactionEntity(
+                transaction.getId(),
+                transaction.getBookingId(),
+                transaction.getAmount(),
+                transaction.getStatus(),
+                transaction.getCreatedAt(),
+                transaction.getUpdatesAt(),
+                transaction.getPaymentProviderTransactionId(),
+                transaction.getPaymentProviderResponse()
+
+
+        );
+        jdbcAggregateTemplate.insert(entity);
         return transaction;
     }
 
@@ -52,40 +64,18 @@ public class JdbcPaymentTransactionRepository implements PaymentTransactionRepos
         if (entity.isEmpty()) {
             return Optional.empty();
         }
-        List<String> seatIds = transactionSeatJdbcRepository.findByTransactionId(id).stream()
-                .map(PaymentTransactionSeatEntity::getSeatId)
-                .collect(Collectors.toList());
         PaymentTransactionEntity transactionEntity = entity.get();
         return Optional.of(new PaymentTransaction(
                 transactionEntity.getId(),
                 transactionEntity.getBookingId(),
-                transactionEntity.getFlightId(),
-                seatIds,
-                transactionEntity.getAmountCents(),
+                transactionEntity.getAmount(),
                 transactionEntity.getStatus(),
                 transactionEntity.getCreatedAt(),
-                transactionEntity.getExpiresAt()
+                transactionEntity.getUpdatesAt(),
+                transactionEntity.getPaymentProviderTransactionId(),
+                transactionEntity.getPaymentProviderResponse()
         ));
     }
 
-    @Override
-    public List<PaymentTransaction> findExpiredPending(Instant cutoff) {
-        return transactionJdbcRepository.findExpired(PaymentStatus.PENDING, cutoff).stream()
-                .map(entity -> {
-                    List<String> seatIds = transactionSeatJdbcRepository.findByTransactionId(entity.getId()).stream()
-                            .map(PaymentTransactionSeatEntity::getSeatId)
-                            .collect(Collectors.toList());
-                    return new PaymentTransaction(
-                            entity.getId(),
-                            entity.getBookingId(),
-                            entity.getFlightId(),
-                            seatIds,
-                            entity.getAmountCents(),
-                            entity.getStatus(),
-                            entity.getCreatedAt(),
-                            entity.getExpiresAt()
-                    );
-                })
-                .collect(Collectors.toList());
-    }
+
 }

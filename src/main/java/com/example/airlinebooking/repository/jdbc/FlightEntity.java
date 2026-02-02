@@ -18,9 +18,10 @@ public class FlightEntity {
     private LocalDateTime departureTime;
     private String aircraftId;
 
-    public FlightEntity() {
-    }
+//    public FlightEntity() {
+//    }
 
+   // @PersistenceCreator
     public FlightEntity(String id, String flightNumber, String origin, String destination, LocalDateTime departureTime, String aircraftId) {
         this.id = id;
         this.flightNumber = flightNumber;
