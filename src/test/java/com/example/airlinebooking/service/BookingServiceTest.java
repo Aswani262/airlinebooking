@@ -6,6 +6,9 @@ import com.example.airlinebooking.domain.Passenger;
 import com.example.airlinebooking.domain.SeatLock;
 import com.example.airlinebooking.domain.SeatStatus;
 import com.example.airlinebooking.domain.Aircraft;
+import com.example.airlinebooking.integration.AirlineItService;
+import com.example.airlinebooking.integration.PaymentService;
+import com.example.airlinebooking.integration.PaymentTransaction;
 import com.example.airlinebooking.repository.BookingRepository;
 import com.example.airlinebooking.repository.FlightRepository;
 import com.example.airlinebooking.repository.jdbc.SeatJdbcRepository;
@@ -29,7 +32,10 @@ class BookingServiceTest {
         BookingRepository bookingRepository = mock(BookingRepository.class);
         SeatLockService seatLockService = mock(SeatLockService.class);
         SeatJdbcRepository seatJdbcRepository = mock(SeatJdbcRepository.class);
-        BookingService bookingService = new DefaultBookingService(bookingRepository, flightRepository, seatLockService, seatJdbcRepository);
+        PaymentService paymentService = mock(PaymentService.class);
+        AirlineItService airlineItService = mock(AirlineItService.class);
+        BookingService bookingService = new DefaultBookingService(bookingRepository, flightRepository, seatLockService, seatJdbcRepository,
+                paymentService, airlineItService);
 
         Flight flight = new Flight("FL-100", "XY100", "JFK", "SFO", java.time.LocalDateTime.now(),
                 new Aircraft("AC-1", "A320", Collections.emptyList()));
@@ -51,8 +57,10 @@ class BookingServiceTest {
 
         when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
         when(seatJdbcRepository.updateStatus(booking.getFlightId(), booking.getSeatIds(), SeatStatus.AVAILABLE)).thenReturn(1);
+        when(paymentService.refund(booking.getId(), 0, "Customer cancellation"))
+                .thenReturn(new PaymentTransaction("REF-1", "REFUNDED", 0, "Customer cancellation"));
 
         var cancelled = bookingService.cancel(booking.getId());
-        assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.REFUNDED);
     }
 }

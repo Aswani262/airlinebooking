@@ -80,7 +80,20 @@ public class AirlineController {
     @PostMapping("/bookings/{bookingId}/cancel")
     public CancelResponse cancelBooking(@PathVariable String bookingId) {
         var booking = bookingService.cancel(bookingId);
-        return new CancelResponse(booking.getId(), booking.getStatus().name());
+        String refundStatus = booking.getStatus().name().equals("REFUNDED") ? "REFUNDED" : "PENDING";
+        return new CancelResponse(booking.getId(), booking.getStatus().name(), refundStatus);
+    }
+
+    @PostMapping("/bookings/{bookingId}/reschedule")
+    public RescheduleResponse rescheduleBooking(@PathVariable String bookingId, @Valid @RequestBody RescheduleRequest request) {
+        var newBooking = bookingService.reschedule(bookingId, request.getNewFlightId(), request.getSeatIds());
+        return new RescheduleResponse(
+                bookingId,
+                newBooking.getId(),
+                newBooking.getStatus().name(),
+                newBooking.getFlightId(),
+                newBooking.getSeatIds()
+        );
     }
 
     private FlightSummary toSummary(Flight flight) {

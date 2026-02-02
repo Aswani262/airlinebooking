@@ -5,5 +5,7 @@ package com.example.airlinebooking.domain;
  */
 public enum BookingStatus {
     CONFIRMED,
-    CANCELLED
+    CANCELLED,
+    REFUNDED,
+    RESCHEDULED
 }

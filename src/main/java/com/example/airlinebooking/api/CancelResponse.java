@@ -5,6 +5,7 @@ package com.example.airlinebooking.api;
  */
 public record CancelResponse(
         String bookingId,
-        String status
+        String status,
+        String refundStatus
 ) {
 }

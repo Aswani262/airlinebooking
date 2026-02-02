@@ -59,6 +59,13 @@ graph LR
   }
   ```
 - `POST /api/bookings/{bookingId}/cancel`
+- `POST /api/bookings/{bookingId}/reschedule`
+  ```json
+  {
+    "newFlightId": "FL-200",
+    "seatIds": ["BE1", "BE2"]
+  }
+  ```
 
 ## Key Architecture Decisions
 

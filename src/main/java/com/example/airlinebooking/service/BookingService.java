@@ -12,4 +12,6 @@ public interface BookingService {
     Booking book(String flightId, Passenger passenger, List<String> seatIds);
 
     Booking cancel(String bookingId);
+
+    Booking reschedule(String bookingId, String newFlightId, List<String> newSeatIds);
 }
