@@ -10,14 +10,19 @@ import java.util.List;
  */
 @Data
 public class PaymentTransaction {
-    private final String id;
-    private final String bookingId;
-    private final double amount;
-    private PaymentStatus status;
-    private final Instant createdAt;
+    private  String id;
+    private  String bookingId;
+    private  double amount;
+    private  PaymentStatus status;
+    private  Instant createdAt;
     private Instant updatesAt;
     private String paymentProviderTransactionId;
     private String paymentProviderResponse;
+
+
+    public PaymentTransaction() {
+    }
+
     public PaymentTransaction(String id, String bookingId, double amount, PaymentStatus status,
                               Instant createdAt, Instant updatesAt, String paymentProviderTransactionId,
                               String paymentProviderResponse) {

@@ -29,4 +29,13 @@ public interface SeatJdbcRepository extends CrudRepository<SeatEntity, String> {
     @Modifying
     @Query("UPDATE seats SET status = :newStatus WHERE flight_id = :flightId AND id IN (:seatIds)")
     int updateStatus(String flightId, Collection<String> seatIds, SeatStatus newStatus);
+
+
+    @Modifying
+    @Query("""
+        UPDATE seats
+        SET status = :status
+        WHERE id IN (:seatIds)
+        """)
+    int updateStatusByIds(List<String> seatIds, SeatStatus seatStatus);
 }

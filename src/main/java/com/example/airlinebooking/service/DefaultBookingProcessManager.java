@@ -75,6 +75,7 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
     public Booking handlePaymentSuccess(String transactionId) {
         PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment transaction not found"));
+
         if (transaction.getStatus() != PaymentStatus.PENDING) {
             throw new IllegalStateException("Payment is not pending");
         }
@@ -86,13 +87,15 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
         if((booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.FAILED) && transaction.getStatus() == PaymentStatus.REFUND_IN_PROGRESS){
 
             transaction.setStatus(PaymentStatus.REFUNDED);
-            paymentTransactionRepository.update(transaction);
 
         } else {
 
             transaction.setStatus(PaymentStatus.SUCCEEDED);
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.update(booking, Collections.emptyMap());
+
+            seatJdbcRepository.updateStatusIfCurrent(booking.getFlightId(), booking.getSeatIds(),
+                    SeatStatus.LOCKED, SeatStatus.BOOKED);
         }
 
         paymentTransactionRepository.update(transaction);
@@ -120,7 +123,6 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
         if(booking.getStatus() == BookingStatus.CANCELLED && transaction.getStatus() == PaymentStatus.REFUND_IN_PROGRESS){
 
             transaction.setStatus(PaymentStatus.REFUND_FAILED);
-            paymentTransactionRepository.update(transaction);
 
         } else {
 

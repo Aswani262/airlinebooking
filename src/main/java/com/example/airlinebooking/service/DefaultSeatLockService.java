@@ -18,15 +18,13 @@ import java.util.UUID;
  */
 @Service
 public class DefaultSeatLockService implements SeatLockService {
-    private static final Duration HOLD_DURATION = Duration.ofMinutes(15);
+    private static final Duration HOLD_DURATION = Duration.ofMinutes(5);
 
-    private final FlightRepository flightRepository;
     private final SeatLockRepository seatLockRepository;
     private final SeatJdbcRepository seatJdbcRepository;
 
-    public DefaultSeatLockService(FlightRepository flightRepository, SeatLockRepository seatLockRepository,
+    public DefaultSeatLockService( SeatLockRepository seatLockRepository,
                                   SeatJdbcRepository seatJdbcRepository) {
-        this.flightRepository = flightRepository;
         this.seatLockRepository = seatLockRepository;
         this.seatJdbcRepository = seatJdbcRepository;
     }

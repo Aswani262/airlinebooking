@@ -20,4 +20,9 @@ public interface SeatLockSeatJdbcRepository extends CrudRepository<SeatLockSeatE
     @Modifying
     @Query("DELETE FROM seat_lock_seats WHERE flight_id = :flightId AND seat_id = :seatId")
     void deleteByFlightId(String flightId, String seatId);
+
+    @Query("SELECT seat_id FROM seat_lock_seats WHERE lock_id = :lockId")
+    List<String> findSeatIdsByLockId(String lockId);
+
+
 }

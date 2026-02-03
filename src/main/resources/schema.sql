@@ -23,6 +23,11 @@ CREATE TABLE seats (
     status VARCHAR(20) NOT NULL
 );
 
+CREATE UNIQUE INDEX uq_seats_flight_seat_held_booked
+ON seats (flight_id, seat_number)
+WHERE status IN ('HELD', 'BOOKED');
+
+
 CREATE INDEX seats_flight_idx ON seats (flight_id);
 CREATE INDEX seats_flight_fare_status_idx ON seats (flight_id, fare_class, status);
 
