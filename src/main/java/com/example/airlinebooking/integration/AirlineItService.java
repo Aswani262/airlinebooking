@@ -10,5 +10,5 @@ public interface AirlineItService {
 
     void notifyCancellation(Booking booking);
 
-    void notifyReschedule(Booking originalBooking, Booking newBooking);
+    void notifyReschedule(Booking newBooking);
 }

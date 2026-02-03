@@ -14,4 +14,5 @@ public interface BookingRepository {
     Optional<Booking> findById(String id);
 
     void insert(Booking booking, Map<String, String> passagnerSeatMap);
+
 }

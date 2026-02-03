@@ -142,4 +142,57 @@ public class DefaultBookingProcessManager implements BookingProcessManager {
             handlePaymentFailure(transactionId);
         }
     }
+
+    @Override
+    @Transactional
+    public Booking cancel(String bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.EXPIRED || booking.getStatus() == BookingStatus.FAILED) {
+            return booking;
+        }
+        flightRepository.findById(booking.getFlightId())
+                .orElseThrow(() -> new IllegalArgumentException("Flight not found"));
+        seatJdbcRepository.updateStatus(booking.getFlightId(), booking.getSeatIds(), SeatStatus.AVAILABLE);
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.update(booking, Collections.emptyMap());
+        seatLockService.releaseLock(
+                booking.getFlightId())  ;
+        paymentService.initateRefund(booking.getId(), booking.getAmount(), "Customer cancellation");
+        airlineItService.notifyCancellation(booking);
+        return booking;
+    }
+
+
+    //We need to recalculate the amount based on new flight and seat selection and collect change fee if applicable before rescheduling the booking
+    @Override
+    @Transactional
+    public Booking reschedule(String bookingId, String flightId ,Map<String,String> passengersSeatMap, double amount) {
+        Booking existingBooking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (existingBooking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Only confirmed bookings can be rescheduled");
+        }
+
+        flightRepository.findById(existingBooking.getFlightId())
+                .orElseThrow(() -> new IllegalArgumentException("Flight not found"));
+
+        List<String> seatIds = passengersSeatMap.keySet().stream().toList();
+        // Check seat availability and lock seats
+        SeatLock lock = seatLockService.lockSeats(flightId, seatIds);
+
+        seatJdbcRepository.updateStatus(existingBooking.getFlightId(), existingBooking.getSeatIds(), SeatStatus.AVAILABLE);
+
+        seatLockService.releaseLock(
+                existingBooking.getFlightId());
+
+        existingBooking.setStatus(BookingStatus.PENDING);
+
+        bookingRepository.update(existingBooking,passengersSeatMap);
+
+        paymentService.collectChangeFee(existingBooking.getId(),300 , "Schedule change");
+        airlineItService.notifyReschedule(existingBooking);
+        return existingBooking;
+    }
 }

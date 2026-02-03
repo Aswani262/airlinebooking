@@ -10,7 +10,7 @@ import java.util.List;
 public interface PaymentService {
     PaymentTransaction createTransaction(String bookingId, double amountCents, String reason);
 
-    PaymentTransaction collectChangeFee(String bookingId, double amountCents, String reason);
+    PaymentTransaction collectChangeFee(String bookingId, double amount, String reason);
 
     void initateRefund(String bookingId, double amount, String customerCancellation);
 }

@@ -48,8 +48,6 @@
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/FlightJdbcRepository.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/PaymentTransactionEntity.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/PaymentTransactionJdbcRepository.java
-/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/PaymentTransactionSeatEntity.java
-/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/PaymentTransactionSeatJdbcRepository.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/SeatEntity.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/SeatJdbcRepository.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/SeatLockEntity.java
@@ -57,7 +55,6 @@
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/SeatLockSeatEntity.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/repository/jdbc/SeatLockSeatJdbcRepository.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/BookingProcessManager.java
-/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/BookingService.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/DefaultBookingProcessManager.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/DefaultFareService.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/DefaultFlightSearchService.java
@@ -66,4 +63,7 @@
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/FareService.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/FlightSearchService.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/SeatInventoryService.java
+/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/SeatLockCleanupScheduler.java
 /Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/service/SeatLockService.java
+/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/utils/ApiErrorResponse.java
+/Users/aswani.tiwari/airlinebooking/src/main/java/com/example/airlinebooking/utils/ApiExceptionHandler.java

@@ -2,9 +2,12 @@ package com.example.airlinebooking.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Captures a booking reschedule request so we can move passengers to a new flight and seats.
@@ -12,15 +15,11 @@ import java.util.List;
 @Data
 public class RescheduleRequest {
     @NotBlank
-    private String newFlightId;
+    private String flightId;
     @NotEmpty
-    private List<String> seatIds;
-    private double amount;
-
-
-    public RescheduleRequest(String newFlightId, List<String> seatIds) {
-        this.newFlightId = newFlightId;
-        this.seatIds = seatIds;
-    }
+    private Map<String,String> passengersSeatMap; // passenger name to seat ID
+    @Positive
+    private int amount;
+    private LocalDate bookingDate;
 
 }

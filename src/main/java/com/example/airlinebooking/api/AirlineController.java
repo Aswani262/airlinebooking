@@ -3,9 +3,7 @@ package com.example.airlinebooking.api;
 import com.example.airlinebooking.api.dto.*;
 import com.example.airlinebooking.domain.FareClass;
 import com.example.airlinebooking.domain.Flight;
-import com.example.airlinebooking.domain.Passenger;
 import com.example.airlinebooking.service.BookingProcessManager;
-import com.example.airlinebooking.service.BookingService;
 import com.example.airlinebooking.service.FareService;
 import com.example.airlinebooking.service.FlightSearchService;
 import com.example.airlinebooking.service.SeatInventoryService;
@@ -21,7 +19,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * REST API facade chosen to keep the exercise focused on domain flow without extra gateway components.
@@ -31,15 +28,13 @@ import java.util.UUID;
 public class AirlineController {
     private final FlightSearchService flightSearchService;
     private final FareService fareService;
-    private final BookingService bookingService;
     private final SeatInventoryService seatInventoryService;
     private final BookingProcessManager bookingProcessManager;
 
-    public AirlineController(FlightSearchService flightSearchService, FareService fareService, BookingService bookingService,
+    public AirlineController(FlightSearchService flightSearchService, FareService fareService  ,
                              SeatInventoryService seatInventoryService, BookingProcessManager bookingProcessManager) {
         this.flightSearchService = flightSearchService;
         this.fareService = fareService;
-        this.bookingService = bookingService;
         this.seatInventoryService = seatInventoryService;
         this.bookingProcessManager = bookingProcessManager;
     }
@@ -83,21 +78,21 @@ public class AirlineController {
 
     @PostMapping("/bookings/{bookingId}/cancel")
     public CancelResponse cancelBooking(@PathVariable String bookingId) {
-        var booking = bookingService.cancel(bookingId);
+        var booking = bookingProcessManager.cancel(bookingId);
         return new CancelResponse(booking.getId(), booking.getStatus().name(), "Refund initiated");
     }
 
-//    @PostMapping("/bookings/{bookingId}/reschedule")
-//    public RescheduleResponse rescheduleBooking(@PathVariable String bookingId, @Valid @RequestBody RescheduleRequest request) {
-//        var newBooking = bookingService.reschedule(bookingId, request.getNewFlightId(), request.getSeatIds(),request.getAmount());
-//        return new RescheduleResponse(
-//                bookingId,
-//                newBooking.getId(),
-//                newBooking.getStatus().name(),
-//                newBooking.getFlightId(),
-//                newBooking.getSeatIds()
-//        );
-//    }
+    @PostMapping("/bookings/{bookingId}/reschedule")
+    public RescheduleResponse rescheduleBooking(@PathVariable String bookingId, @Valid @RequestBody RescheduleRequest request) {
+        var newBooking = bookingProcessManager.reschedule(bookingId, request.getFlightId(), request.getPassengersSeatMap(),request.getAmount());
+        return new RescheduleResponse(
+                bookingId,
+                newBooking.getId(),
+                newBooking.getStatus().name(),
+                newBooking.getFlightId(),
+                newBooking.getSeatIds()
+        );
+    }
 
     // Webhook endpoint for payment gateway to notify payment status
     @PostMapping("/payments/status")

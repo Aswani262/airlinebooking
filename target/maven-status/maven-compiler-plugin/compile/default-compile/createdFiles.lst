@@ -7,7 +7,6 @@ com/example/airlinebooking/repository/jdbc/SeatEntity.class
 com/example/airlinebooking/integration/DefaultPaymentService.class
 com/example/airlinebooking/api/AirlineController.class
 com/example/airlinebooking/api/dto/PaymentExpiryResponse.class
-com/example/airlinebooking/service/BookingService.class
 com/example/airlinebooking/service/DefaultSeatInventoryService.class
 com/example/airlinebooking/repository/FlightRepository.class
 com/example/airlinebooking/repository/JdbcSeatLockRepository.class
@@ -29,13 +28,11 @@ com/example/airlinebooking/repository/PaymentTransactionRepository.class
 com/example/airlinebooking/repository/jdbc/BookingEntity.class
 com/example/airlinebooking/api/dto/CancelResponse.class
 com/example/airlinebooking/service/DefaultSeatLockService.class
-com/example/airlinebooking/repository/jdbc/PaymentTransactionSeatJdbcRepository.class
 com/example/airlinebooking/api/dto/PaymentGatewayWebhookResponse.class
 com/example/airlinebooking/repository/jdbc/SeatLockJdbcRepository.class
 com/example/airlinebooking/integration/PaymentTransaction.class
 com/example/airlinebooking/repository/BookingRepository.class
 com/example/airlinebooking/repository/jdbc/FlightEntity.class
-com/example/airlinebooking/repository/jdbc/PaymentTransactionSeatEntity.class
 com/example/airlinebooking/repository/SeatLockRepository.class
 com/example/airlinebooking/domain/PaymentTransaction.class
 com/example/airlinebooking/domain/Flight.class

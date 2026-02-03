@@ -17,5 +17,9 @@ public interface BookingProcessManager {
 
     void handlePaymentFailure(String transactionId);
 
+    Booking cancel(String bookingId);
+
+    Booking reschedule(String bookingId, String flightId,Map<String,String> passengersSeatMap,double amount);
+
     void handlePayment(String bookingId, String paymentGatewayTransactionId, String transactionId, String rawPayload, String status);
 }

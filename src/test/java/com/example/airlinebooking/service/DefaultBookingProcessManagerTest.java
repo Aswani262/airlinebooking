@@ -301,4 +301,201 @@ class DefaultBookingProcessManagerTest {
         verify(spy).handlePaymentFailure("TX-1");
         verify(spy, never()).handlePaymentSuccess(anyString());
     }
+
+// -----------------------
+// cancel() tests
+// -----------------------
+
+    @Test
+    void cancel_shouldThrowWhenBookingNotFound() {
+        when(bookingRepository.findById("B-404")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.cancel("B-404")
+        );
+
+        assertEquals("Booking not found", ex.getMessage());
+
+        verify(bookingRepository).findById("B-404");
+        verifyNoInteractions(flightRepository, seatJdbcRepository, seatLockService, paymentService, airlineItService);
+    }
+
+    @Test
+    void cancel_shouldReturnBookingAsIs_whenAlreadyCancelled() {
+        Booking booking = new Booking("B-1", "FL-1", List.of("S1"), BookingStatus.CANCELLED, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+
+        Booking result = manager.cancel("B-1");
+
+        assertSame(booking, result);
+        assertEquals(BookingStatus.CANCELLED, result.getStatus());
+
+        verify(bookingRepository).findById("B-1");
+        verifyNoInteractions(flightRepository, seatJdbcRepository, seatLockService, paymentService, airlineItService);
+        verify(bookingRepository, never()).update(any(), anyMap());
+    }
+
+    @Test
+    void cancel_shouldReturnBookingAsIs_whenExpired() {
+        Booking booking = new Booking("B-1", "FL-1", List.of("S1"), BookingStatus.EXPIRED, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+
+        Booking result = manager.cancel("B-1");
+
+        assertSame(booking, result);
+        assertEquals(BookingStatus.EXPIRED, result.getStatus());
+
+        verify(bookingRepository).findById("B-1");
+        verifyNoInteractions(flightRepository, seatJdbcRepository, seatLockService, paymentService, airlineItService);
+        verify(bookingRepository, never()).update(any(), anyMap());
+    }
+
+    @Test
+    void cancel_shouldReturnBookingAsIs_whenFailed() {
+        Booking booking = new Booking("B-1", "FL-1", List.of("S1"), BookingStatus.FAILED, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+
+        Booking result = manager.cancel("B-1");
+
+        assertSame(booking, result);
+        assertEquals(BookingStatus.FAILED, result.getStatus());
+
+        verify(bookingRepository).findById("B-1");
+        verifyNoInteractions(flightRepository, seatJdbcRepository, seatLockService, paymentService, airlineItService);
+        verify(bookingRepository, never()).update(any(), anyMap());
+    }
+
+    @Test
+    void cancel_shouldThrowWhenFlightNotFound() {
+        Booking booking = new Booking("B-1", "FL-404", List.of("S1"), BookingStatus.CONFIRMED, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+        when(flightRepository.findById("FL-404")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.cancel("B-1")
+        );
+
+        assertEquals("Flight not found", ex.getMessage());
+
+        verify(bookingRepository).findById("B-1");
+        verify(flightRepository).findById("FL-404");
+
+        verifyNoInteractions(seatJdbcRepository, seatLockService, paymentService, airlineItService);
+        verify(bookingRepository, never()).update(any(), anyMap());
+    }
+
+    @Test
+    void cancel_shouldCancelBooking_releaseSeats_releaseLock_refund_notifyCancellation() {
+        Booking booking = new Booking("B-1", "FL-1", List.of("S1", "S2"), BookingStatus.CONFIRMED, 1500.0, Instant.now());
+
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+        when(flightRepository.findById("FL-1")).thenReturn(Optional.of(mock(Flight.class)));
+
+        Booking result = manager.cancel("B-1");
+
+        assertSame(booking, result);
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+
+        verify(seatJdbcRepository).updateStatus("FL-1", List.of("S1", "S2"), SeatStatus.AVAILABLE);
+        verify(bookingRepository).update(eq(booking), eq(Collections.emptyMap()));
+        verify(seatLockService).releaseLock("FL-1");
+        verify(paymentService).initateRefund("B-1", 1500.0, "Customer cancellation");
+        verify(airlineItService).notifyCancellation(booking);
+    }
+
+
+    // -----------------------
+// reschedule() tests
+// -----------------------
+
+    @Test
+    void reschedule_shouldThrowWhenBookingNotFound() {
+        when(bookingRepository.findById("B-404")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.reschedule("B-404", "FL-NEW", Map.of("S9", "P1"), 2000.0)
+        );
+
+        assertEquals("Booking not found", ex.getMessage());
+
+        verify(bookingRepository).findById("B-404");
+        verifyNoInteractions(flightRepository, seatLockService, seatJdbcRepository, paymentService, airlineItService);
+    }
+
+    @Test
+    void reschedule_shouldThrowWhenBookingNotConfirmed() {
+        Booking booking = new Booking("B-1", "FL-OLD", List.of("S1"), BookingStatus.PENDING, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> manager.reschedule("B-1", "FL-NEW", Map.of("S9", "P1"), 2000.0)
+        );
+
+        assertEquals("Only confirmed bookings can be rescheduled", ex.getMessage());
+
+        verify(bookingRepository).findById("B-1");
+        verifyNoInteractions(flightRepository, seatLockService, seatJdbcRepository, paymentService, airlineItService);
+    }
+
+    @Test
+    void reschedule_shouldThrowWhenOldFlightNotFound() {
+        Booking booking = new Booking("B-1", "FL-OLD", List.of("S1"), BookingStatus.CONFIRMED, 1000.0, Instant.now());
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(booking));
+        when(flightRepository.findById("FL-OLD")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.reschedule("B-1", "FL-NEW", Map.of("S9", "P1"), 2000.0)
+        );
+
+        assertEquals("Flight not found", ex.getMessage());
+
+        verify(flightRepository).findById("FL-OLD");
+        verifyNoInteractions(seatLockService, seatJdbcRepository, paymentService, airlineItService);
+    }
+
+    @Test
+    void reschedule_shouldLockNewSeats_releaseOldSeats_releaseOldLock_setPending_update_collectFee_notify() {
+        Booking existingBooking = new Booking("B-1", "FL-OLD", List.of("S1", "S2"), BookingStatus.CONFIRMED, 1000.0, Instant.now());
+
+        Map<String, String> passengersSeatMap = new LinkedHashMap<>();
+        passengersSeatMap.put("S9", "P1");
+        passengersSeatMap.put("S10", "P2");
+
+        List<String> newSeatIds = passengersSeatMap.keySet().stream().toList();
+
+        when(bookingRepository.findById("B-1")).thenReturn(Optional.of(existingBooking));
+        when(flightRepository.findById("FL-OLD")).thenReturn(Optional.of(mock(Flight.class)));
+        when(seatLockService.lockSeats("FL-NEW", newSeatIds))
+                .thenReturn(new SeatLock("LOCK-NEW", "FL-NEW", newSeatIds, Instant.now().plusSeconds(600)));
+
+        Booking result = manager.reschedule("B-1", "FL-NEW", passengersSeatMap, 2000.0);
+
+        assertSame(existingBooking, result);
+        assertEquals(BookingStatus.PENDING, existingBooking.getStatus());
+
+        // lock new flight seats
+        verify(seatLockService).lockSeats("FL-NEW", newSeatIds);
+
+        // release old seats on old flight
+        verify(seatJdbcRepository).updateStatus("FL-OLD", List.of("S1", "S2"), SeatStatus.AVAILABLE);
+
+        // release old lock
+        verify(seatLockService).releaseLock("FL-OLD");
+
+        // booking updated with new passenger-seat map
+        verify(bookingRepository).update(eq(existingBooking), eq(passengersSeatMap));
+
+        // change fee collected
+        verify(paymentService).collectChangeFee("B-1", 300, "Schedule change");
+
+        // notify IT
+        verify(airlineItService).notifyReschedule(existingBooking);
+    }
+
+
 }

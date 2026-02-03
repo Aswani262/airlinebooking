@@ -1,5 +1,6 @@
 package com.example.airlinebooking.repository.jdbc;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 /**
  * Flight persistence model optimized for route and schedule lookups via JDBC queries.
  */
+@Data
 @Table("flights")
 public class FlightEntity {
     @Id
@@ -18,10 +20,9 @@ public class FlightEntity {
     private LocalDateTime departureTime;
     private String aircraftId;
 
-//    public FlightEntity() {
-//    }
+    public FlightEntity() {
+    }
 
-   // @PersistenceCreator
     public FlightEntity(String id, String flightNumber, String origin, String destination, LocalDateTime departureTime, String aircraftId) {
         this.id = id;
         this.flightNumber = flightNumber;
@@ -31,27 +32,4 @@ public class FlightEntity {
         this.aircraftId = aircraftId;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getFlightNumber() {
-        return flightNumber;
-    }
-
-    public String getOrigin() {
-        return origin;
-    }
-
-    public String getDestination() {
-        return destination;
-    }
-
-    public LocalDateTime getDepartureTime() {
-        return departureTime;
-    }
-
-    public String getAircraftId() {
-        return aircraftId;
-    }
 }

@@ -1,4 +1,3 @@
-/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/BookingServiceTest.java
-/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/FareServiceTest.java
-/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/FlightSearchServiceTest.java
-/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/SeatLockServiceTest.java
+/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/DefaultBookingProcessManagerTest.java
+/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/DefaultFareServiceTest.java
+/Users/aswani.tiwari/airlinebooking/src/test/java/com/example/airlinebooking/service/DefaultFlightSearchServiceTest.java

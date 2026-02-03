@@ -19,7 +19,7 @@ public class DefaultAirlineItService implements AirlineItService {
     }
 
     @Override
-    public void notifyReschedule(Booking originalBooking, Booking newBooking) {
+    public void notifyReschedule( Booking newBooking) {
         // Placeholder for reschedule sync call.
     }
 }
